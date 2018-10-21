@@ -1,7 +1,6 @@
 <?php
 
 use GraphQL\Type\Schema;
-use GraphQL\Type\Definition\ObjectType;
 
 class EndpointTest extends TestCase
 {
@@ -52,7 +51,7 @@ class EndpointTest extends TestCase
     {
         $response = $this->call('GET', '/graphql', [
             'query' => $this->queries['examplesWithVariables'],
-            'params' => [
+            'variables' => [
                 'index' => 0
             ]
         ]);
@@ -93,17 +92,18 @@ class EndpointTest extends TestCase
      *
      * @test
      */
-    public function testBatchedQueries() {
+    public function testBatchedQueries()
+    {
         $response = $this->call('GET', '/graphql', [
             [
                 'query' => $this->queries['examplesWithVariables'],
-                'params' => [
+                'variables' => [
                     'index' => 0
                 ]
             ],
             [
                 'query' => $this->queries['examplesWithVariables'],
-                'params' => [
+                'variables' => [
                     'index' => 0
                 ]
             ]
