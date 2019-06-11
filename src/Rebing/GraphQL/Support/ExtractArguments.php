@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Rebing\GraphQL\Support;
 
 use GraphQL\Executor\Values;
-use GraphQL\Type\Definition\ResolveInfo;
-use GraphQL\Type\Definition\ScalarType;
 use GraphQL\Language\AST\FieldNode;
+use GraphQL\Type\Definition\ScalarType;
+use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\WrappingType;
 
 class ExtractArguments

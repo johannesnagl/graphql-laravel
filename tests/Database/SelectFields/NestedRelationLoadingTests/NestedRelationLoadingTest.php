@@ -658,7 +658,7 @@ SQL
                                         'title' => $users[0]->posts[0]->comments[1]->title,
                                     ],
                                 ],
-                            ]
+                            ],
                         ],
                     ],
                     [
@@ -681,7 +681,7 @@ SQL
                                         'title' => $users[1]->posts[0]->comments[1]->title,
                                     ],
                                 ],
-                            ]
+                            ],
                         ],
                     ],
                 ],
