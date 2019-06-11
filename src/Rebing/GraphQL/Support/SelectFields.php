@@ -27,6 +27,7 @@ class SelectFields
     private $relations = [];
     /** @var array */
     private static $privacyValidations = [];
+    private $resolveInfo;
 
     const FOREIGN_KEY = 'foreignKey';
 
@@ -37,14 +38,16 @@ class SelectFields
      */
     public function __construct(ResolveInfo $info, $parentType, array $args)
     {
+        $this->resolveInfo = $info;
+
         if ($parentType instanceof WrappingType) {
             $parentType = $parentType->getWrappedType(true);
         }
 
-        if (! is_null($info->fieldNodes[0]->selectionSet)) {
+        if (!is_null($info->fieldNodes[0]->selectionSet)) {
             self::$args = $args;
 
-            $fields = self::getSelectableFieldsAndRelations($info->getFieldSelection(5), $parentType);
+            $fields = $this->getSelectableFieldsAndRelations($info->getFieldSelection(5), $parentType);
 
             $this->select = $fields[0];
             $this->relations = $fields[1];
@@ -59,7 +62,7 @@ class SelectFields
      *               where the first key is 'select' array and second is 'with' array.
      *               On other recursions return a closure that will be used in with
      */
-    public static function getSelectableFieldsAndRelations(array $requestedFields, $parentType, $customQuery = null, $topLevel = true)
+    public function getSelectableFieldsAndRelations(array $requestedFields, $parentType, ?array $customQueryWithArgs = null, $topLevel = true)
     {
         $select = [];
         $with = [];
@@ -70,17 +73,17 @@ class SelectFields
         $parentTable = self::getTableNameFromParentType($parentType);
         $primaryKey = self::getPrimaryKeyFromParentType($parentType);
 
-        self::handleFields($requestedFields, $parentType, $select, $with);
+        $this->handleFields($requestedFields, $parentType, $select, $with);
 
         // If a primary key is given, but not in the selects, add it
-        if (! is_null($primaryKey)) {
+        if (!is_null($primaryKey)) {
             if (is_array($primaryKey)) {
                 foreach ($primaryKey as $key) {
-                    $select[] = $parentTable ? ($parentTable.'.'.$key) : $key;
+                    $select[] = $parentTable ? ($parentTable . '.' . $key) : $key;
                 }
             } else {
-                $primaryKey = $parentTable ? ($parentTable.'.'.$primaryKey) : $primaryKey;
-                if (! in_array($primaryKey, $select)) {
+                $primaryKey = $parentTable ? ($parentTable . '.' . $primaryKey) : $primaryKey;
+                if (!in_array($primaryKey, $select)) {
                     $select[] = $primaryKey;
                 }
             }
@@ -89,9 +92,11 @@ class SelectFields
         if ($topLevel) {
             return [$select, $with];
         } else {
-            return function ($query) use ($with, $select, $customQuery) {
-                if ($customQuery) {
-                    $query = $customQuery(self::$args, $query);
+            return function ($query) use ($with, $select, $customQueryWithArgs, $parentType) {
+                if ($customQueryWithArgs) {
+                    list($customQuery, $args) = $customQueryWithArgs;
+
+                    $query = $customQuery($args, $query);
                 }
 
                 $query->select($select);
@@ -104,7 +109,7 @@ class SelectFields
      * Get the selects and withs from the given fields
      * and recurse if necessary.
      */
-    protected static function handleFields(array $requestedFields, $parentType, array &$select, array &$with)
+    protected function handleFields(array $requestedFields, $parentType, array &$select, array &$with)
     {
         $parentTable = self::isMongodbInstance($parentType) ? null : self::getTableNameFromParentType($parentType);
 
@@ -142,7 +147,7 @@ class SelectFields
 
                 // Pagination
                 if (is_a($parentType, config('graphql.pagination_type', PaginationType::class))) {
-                    self::handleFields($field, $fieldObject->config['type']->getWrappedType(), $select, $with);
+                    $this->handleFields($field, $fieldObject->config['type']->getWrappedType(), $select, $with);
                 }
                 // With
                 elseif (is_array($field) && $queryable) {
@@ -159,30 +164,30 @@ class SelectFields
                             $foreignKey = $relation->getQualifiedForeignKeyName();
                         }
 
-                        $foreignKey = $parentTable ? ($parentTable.'.'.preg_replace('/^'.preg_quote($parentTable).'\./', '', $foreignKey)) : $foreignKey;
+                        $foreignKey = $parentTable ? ($parentTable . '.' . preg_replace('/^' . preg_quote($parentTable) . '\./', '', $foreignKey)) : $foreignKey;
 
                         if (is_a($relation, MorphTo::class)) {
                             $foreignKeyType = $relation->getMorphType();
-                            $foreignKeyType = $parentTable ? ($parentTable.'.'.$foreignKeyType) : $foreignKeyType;
+                            $foreignKeyType = $parentTable ? ($parentTable . '.' . $foreignKeyType) : $foreignKeyType;
 
-                            if (! in_array($foreignKey, $select)) {
+                            if (!in_array($foreignKey, $select)) {
                                 $select[] = $foreignKey;
                             }
 
-                            if (! in_array($foreignKeyType, $select)) {
+                            if (!in_array($foreignKeyType, $select)) {
                                 $select[] = $foreignKeyType;
                             }
                         } elseif (is_a($relation, BelongsTo::class)) {
-                            if (! in_array($foreignKey, $select)) {
+                            if (!in_array($foreignKey, $select)) {
                                 $select[] = $foreignKey;
                             }
                         }
                         // If 'HasMany', then add it in the 'with'
                         elseif ((is_a($relation, HasMany::class) || is_a($relation, MorphMany::class) || is_a($relation, HasOne::class) || is_a($relation, MorphOne::class))
-                            && ! array_key_exists($foreignKey, $field)) {
+                            && !array_key_exists($foreignKey, $field)) {
                             $segments = explode('.', $foreignKey);
                             $foreignKey = end($segments);
-                            if (! array_key_exists($foreignKey, $field)) {
+                            if (!array_key_exists($foreignKey, $field)) {
                                 $field[$foreignKey] = self::FOREIGN_KEY;
                             }
                         }
@@ -192,9 +197,16 @@ class SelectFields
 
                         self::addAlwaysFields($fieldObject, $field, $parentTable, true);
 
-                        $with[$key] = self::getSelectableFieldsAndRelations($field, $newParentType, $customQuery, false);
+                        $customQueryWithArgs = null;
+                        if ($customQuery) {
+                            $customQueryWithArgs = [
+                                $customQuery,
+                                (new ExtractArguments($this->resolveInfo))->forKey($key)
+                            ];
+                        }
+                        $with[$key] = $this->getSelectableFieldsAndRelations($field, $newParentType, $customQueryWithArgs, false);
                     } else {
-                        self::handleFields($field, $fieldObject->config['type'], $select, $with);
+                        $this->handleFields($field, $fieldObject->config['type'], $select, $with);
                     }
                 }
                 // Select
@@ -257,7 +269,7 @@ class SelectFields
                     self::$privacyValidations[$privacyClass] = $validated;
                 }
 
-                if (! $validated) {
+                if (!$validated) {
                     $selectable = null;
                 }
             }
@@ -299,11 +311,11 @@ class SelectFields
 
     protected static function addFieldToSelect($field, &$select, $parentTable, $forRelation)
     {
-        if ($forRelation && ! array_key_exists($field, $select)) {
+        if ($forRelation && !array_key_exists($field, $select)) {
             $select[$field] = true;
-        } elseif (! $forRelation && ! in_array($field, $select)) {
-            $field = $parentTable ? ($parentTable.'.'.$field) : $field;
-            if (! in_array($field, $select)) {
+        } elseif (!$forRelation && !in_array($field, $select)) {
+            $field = $parentTable ? ($parentTable . '.' . $field) : $field;
+            if (!in_array($field, $select)) {
                 $select[] = $field;
             }
         }
