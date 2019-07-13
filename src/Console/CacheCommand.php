@@ -6,6 +6,8 @@ namespace Rebing\GraphQL\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
+use Rebing\GraphQL\GraphQL;
+use Illuminate\Support\Facades\Storage;
 
 class CacheCommand extends Command
 {
@@ -13,24 +15,16 @@ class CacheCommand extends Command
 
     protected $description = 'Caches graphQL types mapping for faster configuration loading';
 
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
     protected $files;
 
-    /**
-     * Create a new config cache command instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @return void
-     */
-    public function __construct(Filesystem $files)
+    protected $graphql;
+
+    public function __construct(Filesystem $files, GraphQL $graphql)
     {
         parent::__construct();
 
         $this->files = $files;
+        $this->graphql = $graphql;
     }
 
     /**
@@ -44,13 +38,9 @@ class CacheCommand extends Command
     {
         $this->call('graphql:clear');
 
-        $config = $this->getFreshConfiguration();
+        $configPath = $this->graphql->getCachedConfigPath();
 
-        $configPath = $this->getCachedFilePath();
-
-        $this->files->put(
-            $configPath, '<?php return '.var_export($config, true).';'.PHP_EOL
-        );
+        $this->files->put($configPath, '<?php return '.var_export(config('graphql.routes'), true).';'.PHP_EOL);
 
         try {
             require $configPath;
@@ -61,16 +51,6 @@ class CacheCommand extends Command
         }
 
         $this->info('Configuration cached successfully!');
-    }
-
-    /**
-     * Get the path to the configuration cache file.
-     *
-     * @return string
-     */
-    public function getCachedFilePath()
-    {
-        return $_ENV['APP_GRAPHQL_CACHE'] ?? $this->bootstrapPath().'/cache/graphql.php';
     }
 
 }

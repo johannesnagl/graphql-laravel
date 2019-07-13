@@ -6,6 +6,7 @@ namespace Rebing\GraphQL\Console;
 
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
+use Rebing\GraphQL\GraphQL;
 
 class CacheClearCommand extends Command
 {
@@ -13,24 +14,16 @@ class CacheClearCommand extends Command
 
     protected $description = 'Remove the configuration cache file';
 
-    /**
-     * The filesystem instance.
-     *
-     * @var \Illuminate\Filesystem\Filesystem
-     */
     protected $files;
 
-    /**
-     * Create a new config cache command instance.
-     *
-     * @param  \Illuminate\Filesystem\Filesystem  $files
-     * @return void
-     */
-    public function __construct(Filesystem $files)
+    protected $graphql;
+
+    public function __construct(Filesystem $files, GraphQL $graphql)
     {
         parent::__construct();
 
         $this->files = $files;
+        $this->graphql = $graphql;
     }
 
     /**
@@ -42,35 +35,9 @@ class CacheClearCommand extends Command
      */
     public function handle()
     {
-        $this->call('graphql:clear');
+         $this->files->delete($this->graphql->getCachedConfigPath());
 
-        $config = $this->getFreshConfiguration();
-
-        $configPath = $this->getCachedFilePath();
-
-        $this->files->put(
-            $configPath, '<?php return '.var_export($config, true).';'.PHP_EOL
-        );
-
-        try {
-            require $configPath;
-        } catch (Throwable $e) {
-            $this->files->delete($configPath);
-
-            throw new LogicException('Your configuration files are not serializable.', 0, $e);
-        }
-
-        $this->info('Configuration cached successfully!');
-    }
-
-    /**
-     * Get the path to the configuration cache file.
-     *
-     * @return string
-     */
-    public function getCachedFilePath()
-    {
-        return $_ENV['APP_GRAPHQL_CACHE'] ?? $this->bootstrapPath().'/cache/graphql.php';
+        $this->info('Configuration cache cleared!');
     }
 
 }

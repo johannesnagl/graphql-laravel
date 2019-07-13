@@ -53,7 +53,7 @@ class GraphQL
         $this->app = $app;
     }
  
-    public function cacheConfigPath(): string {
+    public function getCachedConfigPath(): string {
         return $_ENV['APP_GRAPHQL_CACHE'] ?? $this->app->bootstrapPath() . '/cache/graphql.php';
     }
 
