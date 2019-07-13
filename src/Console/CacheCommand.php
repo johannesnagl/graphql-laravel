@@ -40,7 +40,7 @@ class CacheCommand extends Command
 
         $configPath = $this->graphql->getCachedConfigPath();
 
-        $this->files->put($configPath, '<?php return '.var_export(config('graphql.routes'), true).';'.PHP_EOL);
+        $this->files->put($configPath, '<?php return '.var_export(config('graphql.types'), true).';'.PHP_EOL);
 
         try {
             require $configPath;
