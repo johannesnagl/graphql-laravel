@@ -22,6 +22,8 @@ use Rebing\GraphQL\Exception\SchemaNotFound;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Rebing\GraphQL\Support\Contracts\TypeConvertible;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Contracts\Foundation\Application;
 
 class GraphQL
 {
@@ -49,6 +51,10 @@ class GraphQL
     public function __construct(Container $app)
     {
         $this->app = $app;
+    }
+ 
+    public function cacheConfigPath(): string {
+        return $_ENV['APP_GRAPHQL_CACHE'] ?? $this->app->bootstrapPath() . '/cache/graphql.php';
     }
 
     /**

@@ -19,6 +19,8 @@ use Rebing\GraphQL\Console\ScalarMakeCommand;
 use Rebing\GraphQL\Console\MutationMakeCommand;
 use Rebing\GraphQL\Console\InterfaceMakeCommand;
 use GraphQL\Validator\Rules\DisableIntrospection;
+use Rebing\GraphQL\Console\CacheCommand;
+use Rebing\GraphQL\Console\CacheClearCommand;
 
 class GraphQLServiceProvider extends ServiceProvider
 {
@@ -164,6 +166,8 @@ class GraphQLServiceProvider extends ServiceProvider
         $this->commands(ScalarMakeCommand::class);
         $this->commands(TypeMakeCommand::class);
         $this->commands(UnionMakeCommand::class);
+        $this->commands(CacheCommand::class);
+        $this->commands(CacheClearCommand::class);
     }
 
     /**
