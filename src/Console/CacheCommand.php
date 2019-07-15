@@ -7,7 +7,7 @@ namespace Rebing\GraphQL\Console;
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Rebing\GraphQL\GraphQL;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Contracts\Cache\Repository;
 
 class CacheCommand extends Command
 {
@@ -19,12 +19,15 @@ class CacheCommand extends Command
 
     protected $graphql;
 
-    public function __construct(Filesystem $files, GraphQL $graphql)
+    protected const CACHE_KEY = 'graphql:cache';
+
+    public function __construct(Filesystem $files, GraphQL $graphql, Repository $cache)
     {
         parent::__construct();
 
         $this->files = $files;
         $this->graphql = $graphql;
+        $this->cache = $cache;
     }
 
     /**
@@ -38,19 +41,8 @@ class CacheCommand extends Command
     {
         $this->call('graphql:clear');
 
-        $configPath = $this->graphql->getCachedConfigPath();
-
-        $this->files->put($configPath, '<?php return '.var_export(config('graphql.types'), true).';'.PHP_EOL);
-
-        try {
-            require $configPath;
-        } catch (Throwable $e) {
-            $this->files->delete($configPath);
-
-            throw new LogicException('Your configuration files are not serializable.', 0, $e);
-        }
+        $this->cache->put(self::CACHE_KEY, $this->graphql);
 
         $this->info('Configuration cached successfully!');
     }
-
 }
