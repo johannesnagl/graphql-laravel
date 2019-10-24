@@ -57,7 +57,7 @@ abstract class Type implements TypeConvertible
             return $field['resolve'];
         }
 
-        $resolveMethod = 'resolve'.Str::studly($name).'Field';
+        $resolveMethod = 'resolve' . Str::studly($name) . 'Field';
 
         if (method_exists($this, $resolveMethod)) {
             $resolver = [$this, $resolveMethod];
@@ -159,7 +159,7 @@ abstract class Type implements TypeConvertible
     {
         $attributes = $this->getAttributes();
 
-        return isset($attributes[$key]) ? $attributes[$key] : null;
+        return $attributes[$key] ?? null;
     }
 
     public function __set(string $key, $value): void

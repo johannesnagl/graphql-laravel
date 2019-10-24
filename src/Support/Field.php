@@ -259,7 +259,7 @@ abstract class Field
     {
         $attributes = $this->getAttributes();
 
-        return isset($attributes[$key]) ? $attributes[$key] : null;
+        return $attributes[$key] ?? null;
     }
 
     public function __set(string $key, $value): void
