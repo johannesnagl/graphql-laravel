@@ -23,6 +23,7 @@ use Rebing\GraphQL\Tests\Support\Types\PostWithModelAndAliasAndCustomResolverTyp
 use Rebing\GraphQL\Tests\Support\Types\PostWithModelAndAliasType;
 use Rebing\GraphQL\Tests\Support\Types\PostWithModelType;
 use Rebing\GraphQL\Tests\TestCaseDatabase;
+use Rebing\GraphQL\Tests\Support\Queries\PostQueryWithSelectFieldsClassInjectionQuery;
 
 class SelectFieldsTest extends TestCaseDatabase
 {
@@ -49,7 +50,8 @@ GRAQPHQL;
             'query' => $graphql,
         ]);
 
-        $this->assertSqlQueries(<<<'SQL'
+        $this->assertSqlQueries(
+            <<<'SQL'
 select * from "posts" where "posts"."id" = ? limit 1;
 SQL
         );
@@ -66,6 +68,47 @@ SQL
         $this->assertEquals($response->getStatusCode(), 200);
         $this->assertEquals($expectedResult, $response->json());
     }
+
+    public function testWithSelectFieldsClassInjection(): void
+    {
+        $post = factory(Post::class)->create([
+            'title' => 'Title of the post',
+        ]);
+
+        $graphql = <<<GRAQPHQL
+{
+  postWithSelectFieldClassInjection(id: $post->id) {
+    id
+    title
+  }
+}
+GRAQPHQL;
+
+        $this->sqlCounterReset();
+
+        $response = $this->call('GET', '/graphql', [
+            'query' => $graphql,
+        ]);
+
+        $this->assertSqlQueries(
+            <<<'SQL'
+select "id", "title" from "posts" where "posts"."id" = ? limit 1;
+SQL
+        );
+
+        $expectedResult = [
+            'data' => [
+                'postWithSelectFieldClassInjection' => [
+                    'id' => "$post->id",
+                    'title' => 'Title of the post',
+                ],
+            ],
+        ];
+
+        $this->assertEquals($response->getStatusCode(), 200);
+        $this->assertEquals($expectedResult, $response->json());
+    }
+
 
     public function testWithSelectFieldsAndModel(): void
     {
@@ -88,7 +131,8 @@ GRAQPHQL;
             'query' => $graphql,
         ]);
 
-        $this->assertSqlQueries(<<<'SQL'
+        $this->assertSqlQueries(
+            <<<'SQL'
 select "posts"."id", "posts"."title" from "posts" where "posts"."id" = ? limit 1;
 SQL
         );
@@ -271,7 +315,8 @@ GRAQPHQL;
             'query' => $graphql,
         ]);
 
-        $this->assertSqlQueries(<<<'SQL'
+        $this->assertSqlQueries(
+            <<<'SQL'
 select "posts"."id", "posts"."title" from "posts" where "posts"."id" = ? limit 1;
 SQL
         );
@@ -370,7 +415,8 @@ GRAQPHQL;
             'query' => $graphql,
         ]);
 
-        $this->assertSqlQueries(<<<'SQL'
+        $this->assertSqlQueries(
+            <<<'SQL'
 select "posts"."id", "posts"."title" from "posts" where "posts"."id" = ? limit 1;
 SQL
         );
@@ -411,7 +457,8 @@ GRAQPHQL;
             'query' => $graphql,
         ]);
 
-        $this->assertSqlQueries(<<<'SQL'
+        $this->assertSqlQueries(
+            <<<'SQL'
 select "id", "title" from "posts" where "posts"."id" = ? limit 1;
 SQL
         );
@@ -445,6 +492,7 @@ SQL
                 PostWithSelectFieldsAndModelQuery::class,
                 PostWithSelectFieldsNoModelQuery::class,
                 PostWithSelectFieldsAndModelAndAliasCallbackQuery::class,
+                PostQueryWithSelectFieldsClassInjectionQuery::class
             ],
         ]);
 

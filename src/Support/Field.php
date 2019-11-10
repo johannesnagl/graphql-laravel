@@ -15,6 +15,9 @@ use Illuminate\Support\Arr;
 use Rebing\GraphQL\Error\AuthorizationError;
 use Rebing\GraphQL\Error\ValidationError;
 use Validator;
+use Illuminate\Support\Facades\App;
+use ReflectionMethod;
+use InvalidArgumentException;
 
 abstract class Field
 {
@@ -195,13 +198,15 @@ abstract class Field
                 }
             }
 
-            // Add the 'selects and relations' feature as 5th arg
             if (isset($arguments[3])) {
-                $arguments[] = function (int $depth = null) use ($arguments): SelectFields {
+                App::bind(SelectFields::class, function ($app, $params) use ($arguments) {
                     $ctx = $arguments[2] ?? null;
+                    return new SelectFields($arguments[3], $this->type(), $arguments[1], $params['depth'] ?? 5, $ctx);
+                });
 
-                    return new SelectFields($arguments[3], $this->type(), $arguments[1], $depth ?? 5, $ctx);
-                };
+                App::bind(ResolveInfo::class, function () use ($arguments) {
+                    return $arguments[3];
+                });
             }
 
             // Authorize
@@ -209,7 +214,30 @@ abstract class Field
                 throw new AuthorizationError('Unauthorized');
             }
 
-            return call_user_func_array($resolver, $arguments);
+            $method = new ReflectionMethod($this, 'resolve');
+
+            $additionalParams = array_slice($method->getParameters(), 3);
+ 
+            $additionalArguments = array_map(function ($param) use ($arguments) {
+                
+                if ($param->getType()->getName() === 'Closure') {
+                    return function (int $depth = null): SelectFields {
+                        return App::makeWith(SelectFields::class, ['depth' => $depth]);
+                    };
+                }
+                
+                if (is_null($param->getClass())) {
+                    throw new InvalidArgumentException("{$param->name} is not a class");
+                }
+
+                return App::make($param->getClass()->name);
+            }, $additionalParams);
+         
+            return call_user_func_array($resolver, array_merge(
+                [
+                $arguments[0], $arguments[1], $arguments[2]],
+                $additionalArguments
+            ));
         };
     }
 
