@@ -12,7 +12,6 @@ use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type as GraphqlType;
 use GraphQL\Type\Definition\WrappingType;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\App;
 use InvalidArgumentException;
 use Rebing\GraphQL\Error\AuthorizationError;
 use Rebing\GraphQL\Error\ValidationError;
@@ -199,13 +198,13 @@ abstract class Field
             }
 
             if (isset($arguments[3])) {
-                App::bind(SelectFields::class, function ($app, $params) use ($arguments) {
+                app()->bind(SelectFields::class, function ($app, $params) use ($arguments) {
                     $ctx = $arguments[2] ?? null;
 
                     return new SelectFields($arguments[3], $this->type(), $arguments[1], $params['depth'] ?? 5, $ctx);
                 });
 
-                App::bind(ResolveInfo::class, function () use ($arguments) {
+                app()->bind(ResolveInfo::class, function () use ($arguments) {
                     return $arguments[3];
                 });
             }
@@ -222,7 +221,7 @@ abstract class Field
             $additionalArguments = array_map(function ($param) {
                 if ($param->getType()->getName() === 'Closure') {
                     return function (int $depth = null): SelectFields {
-                        return App::makeWith(SelectFields::class, ['depth' => $depth]);
+                        return app()->makeWith(SelectFields::class, ['depth' => $depth]);
                     };
                 }
 
@@ -230,7 +229,7 @@ abstract class Field
                     throw new InvalidArgumentException("{$param->name} is not a class");
                 }
 
-                return App::make($param->getClass()->name);
+                return app()->make($param->getClass()->name);
             }, $additionalParams);
 
             return call_user_func_array($resolver, array_merge(
