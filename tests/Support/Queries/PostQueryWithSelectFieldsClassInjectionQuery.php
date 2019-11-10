@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Rebing\GraphQL\Tests\Support\Queries;
 
+use GraphQL\Type\Definition\ResolveInfo;
 use GraphQL\Type\Definition\Type;
 use Rebing\GraphQL\Support\Facades\GraphQL;
 use Rebing\GraphQL\Support\Query;
-use Rebing\GraphQL\Tests\Support\Models\Post;
-use GraphQL\Type\Definition\ResolveInfo;
 use Rebing\GraphQL\Support\SelectFields;
+use Rebing\GraphQL\Tests\Support\Models\Post;
 
 class PostQueryWithSelectFieldsClassInjectionQuery extends Query
 {

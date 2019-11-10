@@ -9,6 +9,7 @@ use Rebing\GraphQL\Tests\Support\Models\Comment;
 use Rebing\GraphQL\Tests\Support\Models\Post;
 use Rebing\GraphQL\Tests\Support\Queries\PostNonNullWithSelectFieldsAndModelQuery;
 use Rebing\GraphQL\Tests\Support\Queries\PostQuery;
+use Rebing\GraphQL\Tests\Support\Queries\PostQueryWithSelectFieldsClassInjectionQuery;
 use Rebing\GraphQL\Tests\Support\Queries\PostsListOfWithSelectFieldsAndModelQuery;
 use Rebing\GraphQL\Tests\Support\Queries\PostsNonNullAndListAndNonNullOfWithSelectFieldsAndModelQuery;
 use Rebing\GraphQL\Tests\Support\Queries\PostsNonNullAndListOfWithSelectFieldsAndModelQuery;
@@ -23,7 +24,6 @@ use Rebing\GraphQL\Tests\Support\Types\PostWithModelAndAliasAndCustomResolverTyp
 use Rebing\GraphQL\Tests\Support\Types\PostWithModelAndAliasType;
 use Rebing\GraphQL\Tests\Support\Types\PostWithModelType;
 use Rebing\GraphQL\Tests\TestCaseDatabase;
-use Rebing\GraphQL\Tests\Support\Queries\PostQueryWithSelectFieldsClassInjectionQuery;
 
 class SelectFieldsTest extends TestCaseDatabase
 {
@@ -108,7 +108,6 @@ SQL
         $this->assertEquals($response->getStatusCode(), 200);
         $this->assertEquals($expectedResult, $response->json());
     }
-
 
     public function testWithSelectFieldsAndModel(): void
     {
@@ -492,7 +491,7 @@ SQL
                 PostWithSelectFieldsAndModelQuery::class,
                 PostWithSelectFieldsNoModelQuery::class,
                 PostWithSelectFieldsAndModelAndAliasCallbackQuery::class,
-                PostQueryWithSelectFieldsClassInjectionQuery::class
+                PostQueryWithSelectFieldsClassInjectionQuery::class,
             ],
         ]);
 
