@@ -219,7 +219,7 @@ abstract class Field
 
             $additionalParams = array_slice($method->getParameters(), 3);
 
-            $additionalArguments = array_map(function ($param) use ($arguments) {
+            $additionalArguments = array_map(function ($param) {
                 if ($param->getType()->getName() === 'Closure') {
                     return function (int $depth = null): SelectFields {
                         return App::makeWith(SelectFields::class, ['depth' => $depth]);
